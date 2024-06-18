@@ -1,0 +1,56 @@
+import os
+import json
+import mysql.connector
+
+def connect_to_mysql(config_file):
+    try:
+        # Resolve full path to configuration file
+        config_path = os.path.join(os.getcwd(), config_file)
+
+        # Load MySQL configuration from JSON file
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+
+        # Establish MySQL connection
+        connection = mysql.connector.connect(
+            host=config["127.0.0.1"],
+            port=config['3306'],
+            user=config['root'],
+            database=config.get('local_db'),  # Optional: specify database if needed
+            password=config.get('password')   # Optional: provide password if needed
+        )
+
+        if connection.is_connected():
+            db_info = connection.get_server_info()
+            print(f"Connected to MySQL Server version {db_info}")
+            return connection
+
+    except mysql.connector.Error as e:
+        print(f"Error connecting to MySQL: {e}")
+
+    return None
+
+# Example usage
+if __name__ == "__main__":
+    config_file = "mysql_config.json"  # Path to your MySQL configuration JSON file
+    connection = connect_to_mysql(config_file)
+
+    # Example query
+    if connection:
+        try:
+            cursor = connection.cursor()
+            cursor.execute("SELECT * FROM your_table;")
+            rows = cursor.fetchall()
+
+            for row in rows:
+                print(row)
+
+        except mysql.connector.Error as e:
+            print(f"Error executing MySQL query: {e}")
+
+        finally:
+            if 'cursor' in locals() and cursor:
+                cursor.close()
+            if 'connection' in locals() and connection.is_connected():
+                connection.close()
+                print("MySQL connection is closed")
